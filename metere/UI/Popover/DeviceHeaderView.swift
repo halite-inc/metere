@@ -7,56 +7,117 @@ import SwiftUI
 
 public struct DeviceHeaderView: View {
     @ObservedObject var appState: AppState
+    @State private var isPulsing = false
+
+    public init(appState: AppState) {
+        self.appState = appState
+    }
 
     public var body: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: 10) {
+            // Subtle, restrained device icon container
             ZStack {
-                Circle()
-                    .fill(appState.isHeadphoneConnected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.10))
-                    .frame(width: 36, height: 36)
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color(nsColor: .separatorColor).opacity(0.12))
+                    .frame(width: 30, height: 30)
 
                 Image(systemName: appState.menuBarSymbolName)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(appState.isHeadphoneConnected ? .accentColor : .secondary)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(appState.isHeadphoneConnected ? .primary : .secondary)
             }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(appState.activeHeadphone?.name ?? (appState.currentDefaultDevice?.name ?? "No Headphones"))
-                    .font(.system(size: 13.5, weight: .semibold))
+            // Device Name and Connection/Playback Status
+            VStack(alignment: .leading, spacing: 2) {
+                Text(deviceName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
 
                 HStack(spacing: 5) {
-                    Circle()
-                        .fill(statusDotColor)
-                        .frame(width: 6, height: 6)
+                    statusIndicator
 
-                    Text(appState.headerPlaybackStatusText)
-                        .font(.system(size: 11.5, weight: .regular))
+                    Text(statusText)
+                        .font(.system(size: 11, weight: .regular))
                         .foregroundColor(.secondary)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            // Optional subtle inline battery indicator
+            if let battery = appState.batteryInfo {
+                HStack(spacing: 3) {
+                    Image(systemName: battery.sfSymbolName)
+                        .font(.system(size: 11))
+                    Text(battery.formattedText)
+                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                }
+                .foregroundColor(.secondary)
+            }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        )
+        .onAppear {
+            if appState.isAudioPlaying {
+                isPulsing = true
+            }
+        }
+        .onChange(of: appState.isAudioPlaying) { isPlaying in
+            withAnimation(.easeInOut(duration: 1.2)) {
+                isPulsing = isPlaying
+            }
+        }
     }
 
-    private var statusDotColor: Color {
+    private var deviceName: String {
+        if let headphone = appState.activeHeadphone {
+            return headphone.name
+        }
+        if let defaultDev = appState.currentDefaultDevice {
+            return defaultDev.name
+        }
+        return "No Headphones"
+    }
+
+    @ViewBuilder
+    private var statusIndicator: some View {
+        if !appState.isHeadphoneConnected {
+            // Disconnected: clean hollow circle
+            Circle()
+                .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1.2)
+                .frame(width: 6, height: 6)
+        } else if appState.isAudioPlaying {
+            // Connected · Playing: gentle green dot with subtle breathing
+            Circle()
+                .fill(Color.green)
+                .frame(width: 6, height: 6)
+                .opacity(isPulsing ? 0.65 : 1.0)
+                .animation(
+                    Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                    value: isPulsing
+                )
+        } else if appState.activeSessionDuration > 0 {
+            // Connected · Paused: steady warm amber
+            Circle()
+                .fill(Color.orange.opacity(0.85))
+                .frame(width: 6, height: 6)
+        } else {
+            // Connected · No Audio: subtle neutral dot
+            Circle()
+                .fill(Color.secondary.opacity(0.55))
+                .frame(width: 6, height: 6)
+        }
+    }
+
+    private var statusText: String {
         guard appState.isHeadphoneConnected else {
-            return Color.secondary.opacity(0.4)
+            return "Disconnected"
         }
         if appState.isAudioPlaying {
-            return Color.green
+            return "Connected · Playing"
         } else if appState.activeSessionDuration > 0 {
-            return Color.orange.opacity(0.85)
+            return "Connected · Paused"
         } else {
-            return Color.secondary.opacity(0.5)
+            return "Connected · No Audio"
         }
     }
 }

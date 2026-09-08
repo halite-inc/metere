@@ -9,131 +9,184 @@ public struct MetricsGridCard: View {
     @ObservedObject var appState: AppState
     var onViewStatistics: () -> Void
 
+    @State private var isHoveringStatistics = false
+
     public init(appState: AppState, onViewStatistics: @escaping () -> Void = {}) {
         self.appState = appState
         self.onViewStatistics = onViewStatistics
     }
 
     public var body: some View {
-        VStack(spacing: 14) {
-            // Hero Metric: Listening Today
-            VStack(spacing: 2) {
+        VStack(spacing: 12) {
+            // MARK: - Hero Metric: Listening Today
+            VStack(spacing: 3) {
                 Text(appState.formattedTodayDuration)
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(.primary)
 
                 Text("Listening today")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 4)
 
-            // Current Active Session
+            // Minimal, calm grounding accent
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor).opacity(0.25))
+                .frame(width: 42, height: 1)
+                .padding(.vertical, 2)
+
+            // MARK: - Current Active Session
             VStack(spacing: 2) {
                 Text("Current session")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(.secondary)
 
-                Text(appState.formattedCurrentSession)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(appState.isAudioPlaying ? .primary : .secondary)
+                HStack(spacing: 5) {
+                    if appState.isPlayingOrActive {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 4.5, height: 4.5)
+                    }
+
+                    Text(currentSessionText)
+                        .font(.system(size: 13.5, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(appState.isPlayingOrActive ? .primary : .secondary)
+                }
             }
 
-            // Compact Secondary Audio Info
-            HStack(spacing: 6) {
-                Text("Volume \(appState.systemVolumePercentage)%")
-                    .font(.system(size: 11, weight: .medium))
+            // MARK: - Compact Metadata Row: Volume & Digital Level
+            HStack(spacing: 4) {
+                Text(volumeText)
+                    .font(.system(size: 11.5, weight: .regular))
                     .foregroundColor(.secondary)
-
-                Text("·")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary.opacity(0.4))
-
-                Text(appState.formattedDigitalLevel)
-                    .font(.system(size: 11, weight: .medium))
                     .monospacedDigit()
-                    .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(Color(nsColor: .separatorColor).opacity(0.12))
-            )
+            .padding(.top, 2)
 
-            // Subtle Divider
+            // Hairline separator
             Divider()
-                .opacity(0.5)
-                .padding(.horizontal, 4)
+                .opacity(0.4)
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
 
-            // Compact Hearing Exposure Summary
+            // MARK: - Hearing Exposure Summary (Intelligent 2-Line Hierarchy)
             VStack(alignment: .leading, spacing: 3) {
-                HStack {
-                    Text("Hearing Exposure")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "ear")
+                        .font(.system(size: 9.5, weight: .semibold))
+                    Text("HEARING EXPOSURE")
+                        .font(.system(size: 9.5, weight: .semibold))
                 }
+                .foregroundColor(.secondary.opacity(0.7))
 
-                HStack {
-                    Text(hearingStatusSummary)
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundColor(hearingStatusColor)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(hearingPrimaryStatus)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(hearingPrimaryColor)
+
                     Spacer()
+
+                    Text(hearingSecondaryDetail)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(.secondary)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.45))
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 2)
 
-            // View Statistics Navigation Button
-            Button {
-                onViewStatistics()
-            } label: {
+            // Hairline separator
+            Divider()
+                .opacity(0.4)
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
+
+            // MARK: - View Statistics (Native macOS Navigation Row)
+            Button(action: onViewStatistics) {
                 HStack {
                     Text("View Statistics")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+
                     Spacer()
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 11, weight: .semibold))
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.secondary)
                 }
-                .foregroundColor(.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.12))
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isHoveringStatistics ? Color(nsColor: .separatorColor).opacity(0.14) : Color.clear)
                 )
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.12)) {
+                    isHoveringStatistics = hovering
+                }
+            }
         }
-        .padding(.horizontal, 4)
     }
 
-    private var hearingStatusSummary: String {
+    // MARK: - Formatters & Computed Helpers
+
+    private var currentSessionText: String {
+        guard appState.isHeadphoneConnected else { return "—" }
+        if appState.isAudioPlaying {
+            return DailyStatistics.formattedDuration(appState.activeSessionDuration)
+        } else if appState.activeSessionDuration > 0 {
+            return "Paused"
+        } else {
+            return "—"
+        }
+    }
+
+    private var volumeText: String {
+        guard appState.isHeadphoneConnected else {
+            return "Volume —"
+        }
+        let vol = "\(appState.systemVolumePercentage)%"
+        if appState.isAudioPlaying, let dbfs = appState.digitalLevelDBFS {
+            return String(format: "Volume %@  ·  Digital %.1f dBFS", vol, dbfs)
+        } else {
+            return "Volume \(vol)  ·  Digital Idle"
+        }
+    }
+
+    private var hearingPrimaryStatus: String {
         switch appState.whoExposureStatus {
-        case .evaluated(let dose, _, let uncertainty):
+        case .evaluated(_, _, let uncertainty):
             if case .calibrated(let spl, _, _) = appState.acousticSPLStatus {
-                return String(format: "%.0f dBA ±%.0fdB · %.0f%% WHO dose", spl, uncertainty, dose)
+                return String(format: "%.0f dBA ±%.0fdB", spl, uncertainty)
             }
+            return "Calibrated"
+        case .unavailable:
+            return "Not measured"
+        }
+    }
+
+    private var hearingSecondaryDetail: String {
+        switch appState.whoExposureStatus {
+        case .evaluated(let dose, _, _):
             return String(format: "%.0f%% WHO dose", dose)
         case .unavailable(let reason):
-            if reason.contains("envelope") {
-                return "Not measured · Conditions exceeded"
-            } else if reason.contains("No audio") {
-                return "Not measured · Idle"
+            if reason.contains("No audio") {
+                return "No active audio"
+            } else if reason.contains("envelope") {
+                return "Operating conditions exceeded"
+            } else {
+                return "Calibration required"
             }
-            return "Not measured · Calibration required"
         }
     }
 
-    private var hearingStatusColor: Color {
+    private var hearingPrimaryColor: Color {
         switch appState.whoExposureStatus {
         case .evaluated(let dose, _, _):
             if dose > 100 { return .red }

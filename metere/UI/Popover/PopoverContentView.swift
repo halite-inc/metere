@@ -17,78 +17,80 @@ public struct PopoverContentView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 12) {
-            // Header: Device & Connection/Playback Status
+        VStack(spacing: 11) {
+            // MARK: - Header: Refined Device & Playback Status
             DeviceHeaderView(appState: appState)
 
-            // Update Notification Banner
+            // MARK: - Update Notification Banner (Subtle & Native)
             if updateManager.hasUpdateAvailable, let update = updateManager.availableUpdate {
                 Button {
                     updateManager.showingUpdateSheet = true
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 11))
-                            .foregroundColor(.white)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.accentColor)
 
                         Text("Update Available: v\(update.version.description)")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(.primary)
 
                         Spacer()
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.secondary)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
                     .background(
-                        LinearGradient(
-                            colors: [Color.accentColor, Color.accentColor.opacity(0.85)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.10))
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             }
 
-            // Hero Metric & Glanceable Status
+            // Hairline separator below header
+            Divider()
+                .opacity(0.4)
+                .padding(.horizontal, 2)
+
+            // MARK: - Hero Metric, Session, Volume, Exposure & Navigation
             MetricsGridCard(appState: appState) {
                 openStatisticsWindow()
             }
 
-            // Compact Utility Footer
-            HStack {
+            // Hairline separator above footer
+            Divider()
+                .opacity(0.4)
+                .padding(.horizontal, 2)
+
+            // MARK: - Compact Utility Footer
+            HStack(spacing: 4) {
                 Spacer()
 
-                Button {
+                PopoverHoverIconButton(
+                    systemName: "gearshape",
+                    size: 12,
+                    helpText: "Settings… (⌘,)"
+                ) {
                     openSettingsWindow()
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
-                .help("Settings… (⌘,)")
 
-                Button {
+                PopoverHoverIconButton(
+                    systemName: "power",
+                    size: 11,
+                    helpText: "Quit Metere (⌘Q)"
+                ) {
                     NSApplication.shared.terminate(nil)
-                } label: {
-                    Image(systemName: "power")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
-                .help("Quit Metere (⌘Q)")
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 2)
+            .padding(.horizontal, 2)
         }
-        .padding(14)
-        .frame(width: 285)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(width: 320)
         .background(.regularMaterial)
         .sheet(isPresented: $updateManager.showingUpdateSheet) {
             UpdateSheetView(updateManager: updateManager)
@@ -113,6 +115,38 @@ public struct PopoverContentView: View {
             if let window = NSApp.windows.first(where: { $0.title.contains("Settings") || $0.title.contains("Preferences") }) {
                 window.orderFrontRegardless()
                 window.makeKeyAndOrderFront(nil)
+            }
+        }
+    }
+}
+
+// MARK: - Native macOS Hover Icon Button
+
+private struct PopoverHoverIconButton: View {
+    let systemName: String
+    let size: CGFloat
+    let helpText: String
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: size, weight: .regular))
+                .foregroundColor(isHovering ? .primary : .secondary)
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(isHovering ? Color(nsColor: .separatorColor).opacity(0.14) : Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(helpText)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovering = hovering
             }
         }
     }

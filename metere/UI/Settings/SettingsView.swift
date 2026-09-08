@@ -507,9 +507,9 @@ private struct UpdatesSettingsTab: View {
                         .textFieldStyle(.roundedBorder)
 
                     Button("Default") {
-                        settings.updateRepository = "halite-audio/metere"
+                        settings.updateRepository = "halite-inc/metere"
                     }
-                    .disabled(settings.updateRepository == "halite-audio/metere")
+                    .disabled(settings.updateRepository == "halite-inc/metere")
                 }
 
                 Text("Metere queries this repository's public GitHub releases feed to find updates, download assets, and view release notes.")

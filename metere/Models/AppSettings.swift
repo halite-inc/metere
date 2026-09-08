@@ -145,7 +145,7 @@ public final class AppSettings: ObservableObject {
             Keys.automaticallyCheckForUpdates: true,
             Keys.updateCheckInterval: 86400.0, // 24 hours
             Keys.includePrereleases: false,
-            Keys.updateRepository: "halite-audio/metere"
+            Keys.updateRepository: "halite-inc/metere"
         ])
 
         // Determine actual system launch at login status if available
@@ -180,7 +180,7 @@ public final class AppSettings: ObservableObject {
         self.lastUpdateCheckDate = defaults.object(forKey: Keys.lastUpdateCheckDate) as? Date
         self.skippedVersion = defaults.string(forKey: Keys.skippedVersion)
         let savedRepo = defaults.string(forKey: Keys.updateRepository)
-        self.updateRepository = (savedRepo?.isEmpty == false) ? savedRepo! : "halite-audio/metere"
+        self.updateRepository = (savedRepo?.isEmpty == false) ? savedRepo! : "halite-inc/metere"
     }
 
     private func applyLaunchAtLogin(_ enabled: Bool) {

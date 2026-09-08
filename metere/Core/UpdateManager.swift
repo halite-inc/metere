@@ -316,18 +316,37 @@ public final class UpdateManager: NSObject, ObservableObject, URLSessionDownload
             guard let update = self.activeDownloadingUpdate else { return }
 
             let fileName = update.assetName ?? "MetereUpdate.\(location.pathExtension.isEmpty ? "dmg" : location.pathExtension)"
-            let downloadsDir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
-            let destinationURL = downloadsDir.appendingPathComponent(fileName)
+            let downloadsDir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            let preferredDestination = downloadsDir?.appendingPathComponent(fileName)
+            let fallbackDestination = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+            var finalURL = preferredDestination ?? fallbackDestination
 
             do {
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    try FileManager.default.removeItem(at: destinationURL)
+                if let dest = preferredDestination {
+                    if FileManager.default.fileExists(atPath: dest.path) {
+                        try? FileManager.default.removeItem(at: dest)
+                    }
+                    try FileManager.default.moveItem(at: tempDestination, to: dest)
+                    finalURL = dest
+                } else {
+                    throw NSError(domain: "Metere", code: -1, userInfo: [NSLocalizedDescriptionKey: "No downloads directory available"])
                 }
-                try FileManager.default.moveItem(at: tempDestination, to: destinationURL)
-                self.status = .downloaded(fileURL: destinationURL, updateInfo: update)
             } catch {
-                self.status = .error("Failed to save downloaded update: \(error.localizedDescription)")
+                // Fallback to application temporary directory inside sandbox where read/write is guaranteed
+                do {
+                    if FileManager.default.fileExists(atPath: fallbackDestination.path) {
+                        try? FileManager.default.removeItem(at: fallbackDestination)
+                    }
+                    try FileManager.default.moveItem(at: tempDestination, to: fallbackDestination)
+                    finalURL = fallbackDestination
+                } catch let fallbackErr {
+                    self.status = .error("Failed to save downloaded update: \(fallbackErr.localizedDescription)")
+                    return
+                }
             }
+
+            self.status = .downloaded(fileURL: finalURL, updateInfo: update)
         }
     }
 
